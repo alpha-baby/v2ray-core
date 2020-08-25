@@ -66,6 +66,8 @@ func readConfDir(dirPath string) {
 	}
 }
 
+// getConfigFilePath 获取某个目录下的josn结尾的所有json文件
+// 例如返回 ["/tmp/config.json", "/tmp/core/json"]
 func getConfigFilePath() (cmdarg.Arg, error) {
 	if dirExists(configDir) {
 		log.Println("Using confdir from arg:", configDir)
@@ -108,16 +110,17 @@ func GetConfigFormat() string {
 }
 
 func startV2Ray() (core.Server, error) {
+	// tip 1：获取多个配置文件列表
 	configFiles, err := getConfigFilePath()
 	if err != nil {
 		return nil, err
 	}
-
+	// tip 2 使用系统提前注册好的配置解析函数加载配置文件  使用这个函数注册的解析函数 core.RegisterConfigLoader()
 	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)
 	if err != nil {
 		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
 	}
-
+	// tip 4 根据配置 新建一个v2ray实例
 	server, err := core.New(config)
 	if err != nil {
 		return nil, newError("failed to create server").Base(err)
@@ -139,6 +142,7 @@ func main() {
 
 	printVersion()
 
+	// tip 命令行工具展示版本信息
 	if *version {
 		return
 	}
@@ -150,11 +154,14 @@ func main() {
 		os.Exit(23)
 	}
 
+	// tip 测试读取配置文件，配置文件是否有错
 	if *test {
 		fmt.Println("Configuration OK.")
 		os.Exit(0)
 	}
 
+	// tip 5 启动 r2ray 实例,实例具体类型为 core.Instance struct
+	// 非阻塞启动
 	if err := server.Start(); err != nil {
 		fmt.Println("Failed to start", err)
 		os.Exit(-1)
@@ -164,7 +171,7 @@ func main() {
 	// Explicitly triggering GC to remove garbage from config loading.
 	runtime.GC()
 
-	{
+	{// tip 6 阻塞主协程，监听系统信号，
 		osSignals := make(chan os.Signal, 1)
 		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 		<-osSignals

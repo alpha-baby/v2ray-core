@@ -29,6 +29,10 @@ var (
 )
 
 // RegisterConfigLoader add a new ConfigLoader.
+// tip 3 注册不同的类型配置文件的解析函数
+// 其中有两个地方都调用注册了 protobuf 和 json格式解析 了
+// main 中调用了  _ "v2ray.com/core/main/distro/all"
+// v2ray.com/core/main/distro/all 中会有很多个import 都是会执行 每个 包中的 init 函数
 func RegisterConfigLoader(format *ConfigFormat) error {
 	name := strings.ToLower(format.Name)
 	if _, found := configLoaderByName[name]; found {
